@@ -84,7 +84,7 @@ otu %>%
   reshape2::acast(otu_id ~ specimen_id,
                   # rows = otu_id, columns = specimen_id
                   value.var = "read_count") %>%
-     .[1:20,1:6]
+     .[1:16,1:6]
 
 # 43140 ROWS & 32 COLUMNS
 
@@ -290,7 +290,7 @@ otu %>%
   reshape2::acast(otu_id ~ specimen_id,
                   # rows = otu_id, columns = specimen_id
                   value.var = "read_count") %>%
-     .[1:20,1:6]
+     .[1:16,1:6]
 
 # 43140 ROWS & 32 COLUMNS
 
@@ -319,7 +319,7 @@ otu %>%
   reshape2::acast(specimen_id ~ otu_id,
                   # rows = otu_id, columns = specimen_id
                   value.var = "read_count") %>%
-     .[1:20,1:6]
+     .[1:16,1:6]
 
 # 43140 ROWS & 32 COLUMNS
 
@@ -594,6 +594,24 @@ background-size: contain
 
 
 ---
+background-image: url(img/kelly_bioinformatics.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/kelly_bioinformatics_highlight.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/kelly_bioinformatics_power.png)
+background-size: contain
+
+
+
+---
 background-image: url(svg/distance.svg)
 background-size: 500px
 background-position: 85% 50%
@@ -609,15 +627,19 @@ class: center, middle, inverse
 
 .pull-left[
 
-```{r diversity1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r dist1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
+# install.packages("tidyverse") 
+library(tidyverse)
+
+# install.packages("vegan")
 library(vegan)
 
-diversity(x = c(100,0,5,10), index = "shannon", base = 2)
+otu_long <- read_csv(
+  "./data/HMP_OTU_table_longformat_stool_nares.csv.gz"
+)
 
-diversity(x = c(5,5,5,5), index = "shannon", base = 2)
-
-
+otu_long
 
 ```
 
@@ -626,12 +648,152 @@ diversity(x = c(5,5,5,5), index = "shannon", base = 2)
 
 .pull-right[
 
-```{r diversity1-out, ref.label="diversity1", echo=FALSE, message=FALSE, warning=FALSE}
+```{r dist1-out, ref.label="dist1", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
 
 ]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist2-out, ref.label="dist2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% # TRANSPOSE #<<
+  str(vec.len = 2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist3-out, ref.label="dist3", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist4, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist4-out, ref.label="dist4", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r dist5, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu_matrix <- read_rds(
+  "./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
+
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  as.matrix() %>% #<<
+  str(vec.len=2)
+
+```
+
+
+]
+
+.pull-right[
+
+```{r dist5-out, ref.label="dist5", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
 
 
 

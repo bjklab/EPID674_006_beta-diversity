@@ -43,29 +43,28 @@ style_duo_accent(
 )
 ```
 
-# Assignment 005
+# Assignment 006
 
 
 
 ---
 
-# Summarise Alpha Diversity in R
+# Beta Diversity in R
 
 .pad-left[
 
-- Clone the fift class repository:  
-  [https://github.com/bjklab/EPID674_005_alpha-diversity.git](https://github.com/bjklab/EPID674_005_alpha-diversity.git)
+- Clone the sixth class repository:  
+  [https://github.com/bjklab/EPID674_006_beta-diversity.git](https://github.com/bjklab/EPID674_006_beta-diversity.git)
 
-- Read long-form Human Microbiome Data (included in repo)
+- Install & load `tidyverse`, `vegan`, & `ape` packages
 
-- Examine the dataset
-
-- Install & load `tidyverse` & `vegan` packages
+- Examine OTUs, distances, and principal coordinates
 
 - Assigment:  
 
-    - Summarize by specimen: unique OTUs, sequencing depth
-    - Summarize by specimen: alpha diversity
+    - Calculate pairwise distances
+    
+    - Plot principal coordinates
 
 ]
 
@@ -96,16 +95,23 @@ background-size: contain
 .pull-left[
 
 ```{r read-otu, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
-# make sure tidyverse loaded
-library(tidyverse)
+# make sure packages installed
+# install.packages("tidyverse")
+# install.packages("vegan")
+# install.packages("ape")
 
-# load (trimmed) HMP V1-V3 OTU table 
-otu <- read_csv(
-  file = 
-    "./data/HMP_OTU_table_longformat.csv.gz",
+# load packages
+library(tidyverse)
+library(vegan)
+library(ape)
+
+# load data 
+otu_long <- read_csv(
+file = 
+"./data/HMP_OTU_table_longformat_stool_nares.csv.gz"
 )
 
-otu # show what you've read
+otu_long # show what you've read
 
 ```
 
@@ -125,21 +131,27 @@ otu # show what you've read
 
 ---
 
-# Try `mutate()`
+# Using the [rstudio.cloud](https://rstudio.cloud) console
 
 .pull-left[
 
-```{r mutate2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r read-data, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# load data 
+otu_matrix <- read_rds(
+path = 
+"./data/HMP_OTU_table_matrix_stool_nares.rds"
+)
 
-otu %>%
-  mutate(
-    HMPbodysubsite =
-           gsub("_"," ",HMPbodysubsite),
-    log_reads = log10(read_count)
-    )
+# microbiome format
+otu_matrix %>%
+  str(vec.len = 2)
 
-
-
+# ecology format
+otu_matrix %>%
+  t() %>% # TRANSPOSE #<<
+  str(vec.len = 2)
+  
+  
 ```
 
 
@@ -147,7 +159,7 @@ otu %>%
 
 .pull-right[
 
-```{r mutate2-out, ref.label="mutate2", echo=FALSE, message=FALSE, warning=FALSE}
+```{r read-data-out, ref.label="read-data", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -158,21 +170,31 @@ otu %>%
 
 ---
 
-# Try `summarise()`
+# Using the [rstudio.cloud](https://rstudio.cloud) console
 
 .pull-left[
 
-```{r summarise2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r read-data1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# load data 
+hmp_dm <- read_csv(
+file = 
+"./data/HMP_DM_weighted_unifrac_stool_nares.csv.gz"
+)
 
-otu %>%
-  group_by(HMPbodysubsite) %>%
-  summarise(
-    mean_reads = mean(read_count, na.rm = TRUE),
-    sum_reads = sum(read_count, na.rm = TRUE)
-    ) %>%
-  ungroup()
+hmp_pc <- read_csv(
+file = 
+"./data/HMP_PC_weighted_unifrac_stool_nares.csv.gz"
+)
 
+# long-format distance matrix
+hmp_dm %>%
+  print(n = 4)
 
+# long-format principal coordinates
+hmp_pc %>%
+  print(n = 4)
+  
+  
 ```
 
 
@@ -180,7 +202,7 @@ otu %>%
 
 .pull-right[
 
-```{r summarise2-out, ref.label="summarise2", echo=FALSE, message=FALSE, warning=FALSE}
+```{r read-data1-out, ref.label="read-data1", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -191,24 +213,19 @@ otu %>%
 
 ---
 
-# `summarise()` + `vegan`
+# `vegan::vegdist()`
 
 .pull-left[
 
-```{r summarise-vegan, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r distdemo, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-install.packages("vegan")
-library(vegan)
-
-otu %>%
-  group_by(specimen_id) %>%
-  summarise(
-    specimen_shannon = diversity(x = read_count,
-                                 index = "shannon",
-                                 base = exp(1))
-    ) %>%
-  ungroup()
-
+otu_matrix %>%
+  t() %>% #TRANSPOSE #<<
+  vegdist(x = ., #<<
+          method = "jaccard", #<<
+          binary = TRUE) %>% #<<
+  as.matrix() %>% #<<
+  str(vec.len = 2)
 
 ```
 
@@ -217,7 +234,7 @@ otu %>%
 
 .pull-right[
 
-```{r summarise-vegan-out, ref.label="summarise-vegan", echo=FALSE, message=FALSE, warning=FALSE}
+```{r distdemo-out, ref.label="distdemo", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -228,30 +245,19 @@ otu %>%
 
 ---
 
-# `summarise()` + `vegan`
+# `ape::pcoa()`
 
 .pull-left[
 
-```{r plot-vegan, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r pcoademo, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu %>%
-  group_by(specimen_id, HMPbodysubsite) %>%
-  summarise(
-    specimen_shannon = diversity(x = read_count,
-                                 index = "shannon",
-                                 base = exp(1))
-    ) %>%
-  ungroup() %>%
-  qplot(data = ., x = HMPbodysubsite,
-        y = specimen_shannon,
-        fill = HMPbodysubsite,
-        geom = "boxplot") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 270,
-                                   hjust = 0,
-                                   vjust = 0.5),
-        legend.position = "none")
-
+otu_matrix %>%
+  t() %>% #TRANSPOSE 
+  vegdist(x = ., 
+          method = "jaccard", 
+          binary = TRUE) %>% 
+  pcoa() %>% #<<
+  str(vec.len = 2)
 
 ```
 
@@ -260,7 +266,7 @@ otu %>%
 
 .pull-right[
 
-```{r plot-vegan-out, ref.label="plot-vegan", echo=FALSE, message=FALSE, warning=FALSE}
+```{r pcoademo-out, ref.label="pcoademo", echo=FALSE, message=FALSE, warning=FALSE}
 
 ```
 
@@ -271,26 +277,26 @@ otu %>%
 
 ---
 
-# `summarise()` + `vegan`
+# Plot Distances
 
 .pull-left[
 
-```{r summarise-vegan-2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r distplot, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu %>%
-  group_by(specimen_id, HMPbodysubsite) %>%
-  summarise(
-    read_count = read_count,
-    rare_count = as.vector(
-      rrarefy(read_count, sample = 1000)
-      )) %>%
-  summarise(
-    #shannon = ...,
-    rare_shannon = diversity(x = rare_count,
-                                 index = "shannon",
-                                 base = exp(1))
-    ) %>%
-  ungroup()
+hmp_dm %>%
+  mutate(dist_cat =
+           ifelse(site_1 != site_2,
+                  "between",
+                  ifelse(site_1 == "Stool",
+                         "stool",
+                         "nares"))) %>%
+  ggplot(data = .) +
+  geom_histogram(aes(
+    x = weighted_unifrac,
+    fill = dist_cat
+  ), alpha = 0.8,
+  position = "identity") +
+  theme_bw()
 
 
 ```
@@ -300,7 +306,7 @@ otu %>%
 
 .pull-right[
 
-```{r summarise-vegan-2-out, ref.label="summarise-vegan-2", echo=FALSE, message=FALSE, warning=FALSE}
+```{r distplot-out, ref.label="distplot", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -311,25 +317,22 @@ otu %>%
 
 ---
 
-# `summarise()` + `vegan`
+# Plot Principal Coordinates
 
 .pull-left[
 
-```{r summarise-vegan-3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+```{r pcplot, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
 
-otu %>%
-  group_by(specimen_id, HMPbodysubsite) %>%
-  summarise(
-    specimen_shannon = diversity(x = read_count,
-                                 index = "shannon",
-                                 base = exp(1))
-    ) %>%
-  ungroup() %>%
-  group_by(HMPbodysubsite) %>%
-  summarise(
-    median_shannon = median(specimen_shannon)
-  ) %>%
-  ungroup()
+hmp_pc %>%
+  ggplot(data = .) +
+  geom_point(
+    aes(
+    x = PC1,
+    y = PC2,
+    color = HMPbodysubsite
+  ),
+  shape = 21) +
+  theme_bw()
 
 
 ```
@@ -339,7 +342,7 @@ otu %>%
 
 .pull-right[
 
-```{r summarise-vegan-3-out, ref.label="summarise-vegan-3", echo=FALSE, message=FALSE, warning=FALSE}
+```{r pcplot-out, ref.label="pcplot", echo=FALSE, message=FALSE, warning=FALSE, fig.height=5}
 
 ```
 
@@ -354,11 +357,9 @@ otu %>%
 
 .pad-left[
 
-- What is the median Shannon diversity of the Stool specimens?
+- What is the relationship between PERMANOVA testing and the distance matrix (look at slide #11)?
 
-- What's the median sequencing depth of the Stool specimens? (use `sum()`)
-
-- Compare the Shannon diversity of Stool samples with and without rarefaction to 1000 reads per specimen. How do the diversity estimates differ?
+- Does PCoA show the relationship between specimens (communities) or between OTUs?
 
 ]
 
@@ -381,7 +382,7 @@ background-position: 98% 90%
 class: center, middle
 
 # Thank you!
-#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_002_sequences-to-counts.git)
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_006_beta-diversity.git)
 #### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
 
 

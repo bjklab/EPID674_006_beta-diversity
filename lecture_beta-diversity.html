@@ -38,7 +38,7 @@ src: local('Roboto Mono'), local('RobotoMono-Regular'), url(data:font/ttf;base64
 --code-font-is-google: 1;
 --base-font-size: 28px;
 --text-font-size: 1rem;
---code-font-size: 0.5rem;
+--code-font-size: 0.6rem;
 --code-inline-font-size: 1em;
 --header-h1-font-size: 2.5rem;
 --header-h2-font-size: 2rem;
@@ -331,10 +331,6 @@ class: center, middle, inverse
 ## OTU_97.10009         0         0         1         0         0         0
 ## OTU_97.1001          0         0         0         0         0         0
 ## OTU_97.10010         0         0         0         0         0         0
-## OTU_97.10011         0         0         0         0         0         0
-## OTU_97.10012         0         0         0         0         0         0
-## OTU_97.10015         0         0         0         0         0         0
-## OTU_97.10016         0         0         0         0         0         0
 ```
 
 ]
@@ -543,10 +539,6 @@ background-size: contain
 ## OTU_97.10009         0         0         1         0         0         0
 ## OTU_97.1001          0         0         0         0         0         0
 ## OTU_97.10010         0         0         0         0         0         0
-## OTU_97.10011         0         0         0         0         0         0
-## OTU_97.10012         0         0         0         0         0         0
-## OTU_97.10015         0         0         0         0         0         0
-## OTU_97.10016         0         0         0         0         0         0
 ```
 
 ]
@@ -578,10 +570,6 @@ background-size: contain
 ## 700014515        0         0          0           0            0            0
 ## 700014516        0         0          0           0            0            0
 ## 700014517        0         0          0           0            0            0
-## 700014518        0         0          0           0            0            0
-## 700014519        0         0          0           0            0            0
-## 700014520        0         0          0           0            0            0
-## 700014521        0        12          0           0            0            0
 ```
 
 ]
@@ -852,6 +840,24 @@ background-size: contain
 
 
 ---
+background-image: url(img/kelly_bioinformatics.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/kelly_bioinformatics_highlight.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/kelly_bioinformatics_power.png)
+background-size: contain
+
+
+
+---
 background-image: url(svg/distance.svg)
 background-size: 500px
 background-position: 85% 50%
@@ -869,11 +875,17 @@ class: center, middle, inverse
 
 
 ```r
+# install.packages(&quot;tidyverse&quot;) 
+library(tidyverse)
+
+# install.packages(&quot;vegan&quot;)
 library(vegan)
 
-diversity(x = c(100,0,5,10), index = &quot;shannon&quot;, base = 2)
+otu_long &lt;- read_csv(
+  &quot;./data/HMP_OTU_table_longformat_stool_nares.csv.gz&quot;
+)
 
-diversity(x = c(5,5,5,5), index = &quot;shannon&quot;, base = 2)
+otu_long
 ```
 
 
@@ -883,15 +895,179 @@ diversity(x = c(5,5,5,5), index = &quot;shannon&quot;, base = 2)
 
 
 ```
-## [1] 0.6784071
-```
-
-```
-## [1] 2
+## # A tibble: 431,400 x 4
+##    otu_id       specimen_id read_count HMPbodysubsite
+##    &lt;chr&gt;              &lt;dbl&gt;      &lt;dbl&gt; &lt;chr&gt;         
+##  1 OTU_97.1       700014718          0 Stool         
+##  2 OTU_97.10      700014718          0 Stool         
+##  3 OTU_97.100     700014718          0 Stool         
+##  4 OTU_97.1000    700014718          0 Stool         
+##  5 OTU_97.10000   700014718          0 Stool         
+##  6 OTU_97.10001   700014718          0 Stool         
+##  7 OTU_97.10002   700014718          0 Stool         
+##  8 OTU_97.10003   700014718          0 Stool         
+##  9 OTU_97.10004   700014718          0 Stool         
+## 10 OTU_97.10005   700014718          0 Stool         
+## # … with 431,390 more rows
 ```
 
 
 ]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+
+```r
+otu_matrix &lt;- read_rds(
+  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
+)
+
+otu_matrix %&gt;%
+  str(vec.len = 2)
+```
+
+
+]
+
+.pull-right[
+
+
+```
+##  num [1:43140, 1:10] 0 0 0 0 0 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:43140] &quot;OTU_97.1&quot; &quot;OTU_97.10&quot; ...
+##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+
+```r
+otu_matrix &lt;- read_rds(
+  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
+)
+
+otu_matrix %&gt;%
+* t() %&gt;% # TRANSPOSE
+  str(vec.len = 2)
+```
+
+
+]
+
+.pull-right[
+
+
+```
+##  num [1:10, 1:43140] 0 0 0 0 0 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+##   ..$ : chr [1:43140] &quot;OTU_97.1&quot; &quot;OTU_97.10&quot; ...
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+
+```r
+otu_matrix &lt;- read_rds(
+  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
+)
+
+otu_matrix %&gt;%
+* t() %&gt;% #TRANSPOSE
+* vegdist(x = .,
+*         method = &quot;jaccard&quot;,
+*         binary = TRUE) %&gt;%
+  str(vec.len=2)
+```
+
+
+]
+
+.pull-right[
+
+
+```
+##  &#39;dist&#39; num [1:45] 1 0.982 ...
+##  - attr(*, &quot;Size&quot;)= int 10
+##  - attr(*, &quot;Labels&quot;)= chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+##  - attr(*, &quot;Diag&quot;)= logi FALSE
+##  - attr(*, &quot;Upper&quot;)= logi FALSE
+##  - attr(*, &quot;method&quot;)= chr &quot;binary jaccard&quot;
+##  - attr(*, &quot;call&quot;)= language vegdist(x = ., method = &quot;jaccard&quot;, binary = TRUE)
+```
+
+
+]
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+
+```r
+otu_matrix &lt;- read_rds(
+  &quot;./data/HMP_OTU_table_matrix_stool_nares.rds&quot;
+)
+
+otu_matrix %&gt;%
+* t() %&gt;% #TRANSPOSE
+* vegdist(x = .,
+*         method = &quot;jaccard&quot;,
+*         binary = TRUE) %&gt;%
+* as.matrix() %&gt;%
+  str(vec.len=2)
+```
+
+
+]
+
+.pull-right[
+
+
+```
+##  num [1:10, 1:10] 0 1 ...
+##  - attr(*, &quot;dimnames&quot;)=List of 2
+##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+##   ..$ : chr [1:10] &quot;700014718&quot; &quot;700014767&quot; ...
+```
+
+
+]
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
 
 
 
