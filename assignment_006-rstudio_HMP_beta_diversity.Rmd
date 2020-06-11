@@ -1,0 +1,389 @@
+---
+title: "Code Exercise"
+subtitle: "HMP Data in RStudio"  
+author: 
+  - "Brendan J. Kelly, MD, MS"
+date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
+output:
+  xaringan::moon_reader:
+    seal: FALSE
+    self_contained: TRUE
+    lib_dir: libs
+    css: xaringan-themer-plus.css
+    nature:
+      ratio: 16:9
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+background-image: url(svg/coding.svg)
+background-size: 500px
+background-position: 50% 50%
+class: center, middle, inverse
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE, eval=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color = "#011F5B",
+  secondary_color = "#990000",
+  inverse_header_color = "#FFFFFF",
+  header_font_google = google_font("Roboto Condensed"),
+  text_font_google = google_font("Roboto"),
+  code_font_google = google_font("Roboto Mono"),
+  # padding = "64px 64px 64px 64px"
+  # base_font_size = "24px",
+  # text_font_base = "1rem",
+  # header_h1_font_size = "2.75rem",
+  # header_h2_font_size = "2rem",
+  # header_h3_font_size = "1.25rem",
+)
+```
+
+# Assignment 005
+
+
+
+---
+
+# Summarise Alpha Diversity in R
+
+.pad-left[
+
+- Clone the fift class repository:  
+  [https://github.com/bjklab/EPID674_005_alpha-diversity.git](https://github.com/bjklab/EPID674_005_alpha-diversity.git)
+
+- Read long-form Human Microbiome Data (included in repo)
+
+- Examine the dataset
+
+- Install & load `tidyverse` & `vegan` packages
+
+- Assigment:  
+
+    - Summarize by specimen: unique OTUs, sequencing depth
+    - Summarize by specimen: alpha diversity
+
+]
+
+
+
+---
+background-image: url(img/hmpdacc.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/hmpdacc_otus.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/rstudiocloud_repo.png)
+background-size: contain
+
+
+
+---
+
+# Using the [rstudio.cloud](https://rstudio.cloud) console
+
+.pull-left[
+
+```{r read-otu, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+# make sure tidyverse loaded
+library(tidyverse)
+
+# load (trimmed) HMP V1-V3 OTU table 
+otu <- read_csv(
+  file = 
+    "./data/HMP_OTU_table_longformat.csv.gz",
+)
+
+otu # show what you've read
+
+```
+
+
+]
+
+.pull-right[
+
+```{r read-otu-out, ref.label="read-otu", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Try `mutate()`
+
+.pull-left[
+
+```{r mutate2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu %>%
+  mutate(
+    HMPbodysubsite =
+           gsub("_"," ",HMPbodysubsite),
+    log_reads = log10(read_count)
+    )
+
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r mutate2-out, ref.label="mutate2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Try `summarise()`
+
+.pull-left[
+
+```{r summarise2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu %>%
+  group_by(HMPbodysubsite) %>%
+  summarise(
+    mean_reads = mean(read_count, na.rm = TRUE),
+    sum_reads = sum(read_count, na.rm = TRUE)
+    ) %>%
+  ungroup()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r summarise2-out, ref.label="summarise2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `summarise()` + `vegan`
+
+.pull-left[
+
+```{r summarise-vegan, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+install.packages("vegan")
+library(vegan)
+
+otu %>%
+  group_by(specimen_id) %>%
+  summarise(
+    specimen_shannon = diversity(x = read_count,
+                                 index = "shannon",
+                                 base = exp(1))
+    ) %>%
+  ungroup()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r summarise-vegan-out, ref.label="summarise-vegan", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `summarise()` + `vegan`
+
+.pull-left[
+
+```{r plot-vegan, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu %>%
+  group_by(specimen_id, HMPbodysubsite) %>%
+  summarise(
+    specimen_shannon = diversity(x = read_count,
+                                 index = "shannon",
+                                 base = exp(1))
+    ) %>%
+  ungroup() %>%
+  qplot(data = ., x = HMPbodysubsite,
+        y = specimen_shannon,
+        fill = HMPbodysubsite,
+        geom = "boxplot") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 270,
+                                   hjust = 0,
+                                   vjust = 0.5),
+        legend.position = "none")
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r plot-vegan-out, ref.label="plot-vegan", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `summarise()` + `vegan`
+
+.pull-left[
+
+```{r summarise-vegan-2, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu %>%
+  group_by(specimen_id, HMPbodysubsite) %>%
+  summarise(
+    read_count = read_count,
+    rare_count = as.vector(
+      rrarefy(read_count, sample = 1000)
+      )) %>%
+  summarise(
+    #shannon = ...,
+    rare_shannon = diversity(x = rare_count,
+                                 index = "shannon",
+                                 base = exp(1))
+    ) %>%
+  ungroup()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r summarise-vegan-2-out, ref.label="summarise-vegan-2", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# `summarise()` + `vegan`
+
+.pull-left[
+
+```{r summarise-vegan-3, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+otu %>%
+  group_by(specimen_id, HMPbodysubsite) %>%
+  summarise(
+    specimen_shannon = diversity(x = read_count,
+                                 index = "shannon",
+                                 base = exp(1))
+    ) %>%
+  ungroup() %>%
+  group_by(HMPbodysubsite) %>%
+  summarise(
+    median_shannon = median(specimen_shannon)
+  ) %>%
+  ungroup()
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r summarise-vegan-3-out, ref.label="summarise-vegan-3", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+
+# Questions
+
+.pad-left[
+
+- What is the median Shannon diversity of the Stool specimens?
+
+- What's the median sequencing depth of the Stool specimens? (use `sum()`)
+
+- Compare the Shannon diversity of Stool samples with and without rarefaction to 1000 reads per specimen. How do the diversity estimates differ?
+
+]
+
+
+---
+background-image: url(svg/coding.svg)
+background-size: 500px
+background-position: 50% 50%
+class: center, middle, inverse
+
+# Done!
+### Post questions to the discussion board!
+
+
+
+---
+background-image: url(svg/bacteria.svg)
+background-size: 100px
+background-position: 98% 90%
+class: center, middle
+
+# Thank you!
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_002_sequences-to-counts.git)
+#### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
+
+
+
+

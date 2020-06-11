@@ -1,0 +1,660 @@
+---
+title: "Beta Diversity:</br>Inter-Community Difference"
+subtitle: "📚EPID 674📚"  
+author: "Brendan J. Kelly, MD, MS"
+date: 'Updated: `r format(Sys.Date(), "%d %B %Y")`'
+output:
+  xaringan::moon_reader:
+    self_contained: TRUE
+    lib_dir: libs
+    css: xaringan-themer-plus.css
+    nature:
+      ratio: 16:9
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: middle, inverse
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE, eval=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color = "#011F5B",
+  secondary_color = "#990000",
+  inverse_header_color = "#FFFFFF",
+  header_font_google = google_font("Roboto Condensed"),
+  text_font_google = google_font("Roboto"),
+  code_font_google = google_font("Roboto Mono"),
+  # padding = "64px 64px 64px 64px"
+  # base_font_size = "24px",
+  # text_font_base = "1rem",
+  # header_h1_font_size = "2.75rem",
+  # header_h2_font_size = "2rem",
+  # header_h3_font_size = "1.25rem",
+)
+```
+
+.pad-left[
+
+### Beta diversity
+
+### Pairwise distances
+
+### Principal coordinates
+
+### PERMANOVA
+
+### R's vegan package
+
+]
+
+
+
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Beta diversity
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.center[
+
+```{r otu_table, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+
+# TYPICAL OTU TABLE ORIENTATION IN MICROBIOME STUDIES
+
+otu <- read_csv("./data/HMP_OTU_table_longformat.csv.gz")
+
+otu %>%
+  reshape2::acast(otu_id ~ specimen_id,
+                  # rows = otu_id, columns = specimen_id
+                  value.var = "read_count") %>%
+     .[1:20,1:6]
+
+# 43140 ROWS & 32 COLUMNS
+
+
+```
+
+]
+
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- __Descriptive (e.g., heatmaps and stacked barplots)__
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- Reduce dimensions:
+
+    - single summary statistic (alpha diversity)
+    
+    - pairwise distances (beta diversity) with PCoA or PERMANOVA
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+
+
+---
+background-image: url(img/hmp_heatmap.png)
+background-size: contain
+
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- Descriptive (e.g., heatmaps and stacked barplots)
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- __Reduce dimensions:__
+
+    - __single summary statistic (alpha diversity)__
+    
+    - pairwise distances (beta diversity) with PCoA or PERMANOVA
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+
+---
+background-image: url(img/hmp_shannon.png)
+background-size: contain
+
+
+
+
+---
+
+# High Dimensional Microbiome Data
+
+.pad-left[
+
+- How to deal with high-dimensional microbiome data?
+
+- Descriptive (e.g., heatmaps and stacked barplots)
+    
+- Test a priori hypotheses regarding specific OTUs/taxa
+
+- __Reduce dimensions:__
+
+    - single summary statistic (alpha diversity)
+    
+    - __pairwise distances (beta diversity) with PCoA or PERMANOVA__
+    
+    - community types (mixture modeling)
+
+
+]
+
+
+---
+
+# Beta Diversity as Dimension Reduction
+
+.pad-left[
+
+- Summarize each sample’s relationship to other samples:  
+
+    - pairwise distances
+    
+    - OTU table → square matrix
+    
+- Many beta diversity metrics:  
+
+    - just counts versus counts + phylogeny
+    
+    - weighted versus unweighted
+    
+]
+
+
+
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Pairwise distances
+
+
+---
+background-image: url(img/legendre_cover.png)
+background-size: contain
+
+
+
+
+---
+
+# What's in a distance?
+
+.pad-left[
+
+- “The most usual approach to assess the resemblance among objects or descriptors is to first condense all (or the relevant part of) the information available in the ecological data matrix (Section 2.1) into __a square matrix of association__ among the objects or descriptors (Section 2.2). In most instances, the association matrix is symmetric.”
+
+- Compare variable-variable: “R-mode” (like Pearson’s r coefficient)
+
+- Compare object-object: “Q-mode”
+
+- Six modes of analysis if incorporate time series (Cattell 1966)
+
+]
+
+
+
+---
+background-image: url(img/legendre_3d.png)
+background-size: contain
+
+
+
+
+---
+
+# What's in a distance?
+
+.pad-left[
+
+- “... association will be used as a general term to describe any measure or coefficient used to quantify the __resemblance or difference__ between objects or descriptors, as proposed by Orlóci (1975)."
+
+- Q-mode studies:
+
+    - similarity coefficients (identical = 1)
+    
+    - distance (or dissimilarity) coefficients (identical = 0)
+
+
+]
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
+
+
+
+
+---
+
+# OTU Table: OTUs x Specimens
+
+.center[
+
+```{r otu_microbiome, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+
+# TYPICAL OTU TABLE ORIENTATION IN MICROBIOME STUDIES
+
+otu <- read_csv("./data/HMP_OTU_table_longformat.csv.gz")
+
+otu %>%
+  reshape2::acast(otu_id ~ specimen_id,
+                  # rows = otu_id, columns = specimen_id
+                  value.var = "read_count") %>%
+     .[1:20,1:6]
+
+# 43140 ROWS & 32 COLUMNS
+
+
+```
+
+]
+
+
+
+---
+
+# OTU Table: Specimens x OTUs
+
+.center[
+
+```{r otu_ecology, echo=FALSE, eval=TRUE, warning=FALSE, message=FALSE}
+
+library(tidyverse)
+
+# TYPICAL OTU TABLE ORIENTATION IN MICROBIOME STUDIES
+
+otu <- read_csv("./data/HMP_OTU_table_longformat.csv.gz")
+
+otu %>%
+  reshape2::acast(specimen_id ~ otu_id,
+                  # rows = otu_id, columns = specimen_id
+                  value.var = "read_count") %>%
+     .[1:20,1:6]
+
+# 43140 ROWS & 32 COLUMNS
+
+
+```
+
+]
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
+
+
+
+---
+
+# Distance Metrics for Beta Diversity
+
+.pad-left[
+
+- Just counts versus counts + phylogeny:
+
+    - Jaccard: $J(A,B) = \frac{A∩B}{A∪B}$  &  $d_{J}(A,B) = 1 - J(A,B)$
+
+    - UniFrac: fraction of unique branch length in tree
+
+- Weighted versus unweighted:
+
+    - weighted: counts matter
+
+    - unweighted: binary (presence-absence)
+
+]
+
+
+
+---
+
+# The "Double Zero" Problem
+
+.pad-left[
+
+- “The proportion of zeros in community composition data generally increases with the variability in environmental conditions among the sampling sites. If sampling has been conducted along one or several environmental axes, the species present are likely to differ at least partly from site to site. __Including double zeros in the comparison between sites would result in high values of similarity for the many pairs of sites holding only a few species__, these pairs presenting many double zeros; this would not provide a correct ecological assessment of the situation.”
+
+
+]
+
+
+---
+
+# The "Double Zero" Problem
+
+.pad-left[
+
+- “Because double zeros are not informative, their interpretation generates __the double zero problem: is the value of an association coefficient affected by inclusion of double zeros in its calculation?__ When choosing an association coefficient, ecologists must pay attention to the interpretation of double zeros: except in very limited cases (e.g. controlled experiments involving very few species and with small uncontrolled ecological variation), it is preferable to draw no ecological conclusion from the simultaneous absence of a species at two sites.... In numerical terms, this means to __skip double zeros when computing similarity or distance coefficients__ using species presence-absence or abundance data.”
+
+
+]
+
+
+
+---
+
+# UniFrac
+
+.pad-left[
+
+- UniFrac measures the distance between communities based on the lineages they contain.
+
+- Satisfies the technical requirements of a distance metric:
+
+    - always positive
+    - transitive
+    - satisfies the triangle inequality
+
+- Can thus be used with standard multivariate statistics (e.g., UPGMA, clustering, and __PCoA__).
+
+]
+
+
+
+---
+
+# UniFrac
+
+.pad-left[
+
+- UniFrac “exploits the different degrees of similarity between sequences”:
+
+    - “the unique fraction metric, or UniFrac, measures the phylogenetic distance between sets of taxa in a phylogenetic tree as the fraction of the branch length of the tree that leads to descendants from either one environment or the other, but not both”
+    
+    - “captures the total amount of evolution that is unique to each state, presumably reflecting adaptation to one environment that would be deleterious in the other” (designed to be based on rRNA)
+
+
+]
+
+
+
+---
+background-image: url(img/unifrac_from_tree.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/legendre_distances.png)
+background-size: contain
+
+
+
+---
+
+# Beta Diversity: Which Distance Metric?
+
+.pad-left[
+
+- Why use Jaccard? UniFrac?
+
+- Why use weighted? Unweighted?
+
+
+]
+
+
+
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# Principal Coordinates
+
+
+
+---
+
+# Original Discriptors ⇾ PCA
+
+.pad-left[
+
+- PCA: principal component analysis
+
+    - rigid rotation for successive directions of maximum variance
+
+    - lots of restrictions (Euclidean)
+    
+    - but allows projection of original descriptors in PCA space
+
+
+]
+
+
+---
+
+# Pairwise Distances ⇾ PCoA
+
+.pad-left[
+
+- PCoA: principal coordinate analysis
+
+    - any metric distance, even if non-Euclidean
+    
+    - like PCA, eigenvalue decomposition (maximum variance) but mediated by distance function (no original descriptors)
+
+    - unlike PCA, does not allow projection of original descriptors in reduced-dimension space
+
+
+]
+
+
+
+---
+background-image: url(img/pca_vs_pcoa.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/weighted_unifrac.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/unweighted_unifrac.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/weighted_jaccard.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/unweighted_jaccard.png)
+background-size: contain
+
+
+
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# PERMANOVA
+
+
+
+---
+
+# Pairwise Distances ⇾ PERMANOVA
+
+.pad-left[
+
+- Pairwise distance matrix can be partitioned by group assignment and ANOVA-like analysis can be applied to detect difference between groups
+
+- __PERMANOVA__: permutational ANOVA (aka, adonis)
+
+    - pseudo F-ratio: conceptually similar but not F-distributed
+    
+    - testing by label permutation
+    
+    - quantification of effect size by R-squared or omega-squared
+    
+    - (the latter a less biased estimator of true effect) 
+
+]
+
+
+
+
+---
+background-image: url(img/legendre_otu_to_dm.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_vs_between_group.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_between_weighted_unifrac.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_between_unweighted_unifrac.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_between_weighted_jaccard.png)
+background-size: contain
+
+
+
+---
+background-image: url(img/within_between_unweighted_jaccard.png)
+background-size: contain
+
+
+
+---
+background-image: url(svg/distance.svg)
+background-size: 500px
+background-position: 85% 50%
+class: center, middle, inverse
+
+# R's vegan package
+
+
+
+---
+
+# `vegan::vegdist()`
+
+.pull-left[
+
+```{r diversity1, echo=TRUE, eval=FALSE, warning=FALSE, message=FALSE}
+
+library(vegan)
+
+diversity(x = c(100,0,5,10), index = "shannon", base = 2)
+
+diversity(x = c(5,5,5,5), index = "shannon", base = 2)
+
+
+
+```
+
+
+]
+
+.pull-right[
+
+```{r diversity1-out, ref.label="diversity1", echo=FALSE, message=FALSE, warning=FALSE}
+
+```
+
+
+]
+
+
+
+---
+class: center, middle, inverse
+background-image: url(svg/conjugation.svg)
+background-size: 500px
+background-position: 85% 50%
+
+# Questions?
+### Post to the discussion board!
+
+
+---
+background-image: url(svg/bacteria.svg)
+background-size: 100px
+background-position: 98% 90%
+class: center, middle
+
+# Thank you!
+#### Slides available: [github.com/bjklab](https://github.com/bjklab/EPID674_002_sequences-to-counts.git)
+#### [brendank@pennmedicine.upenn.edu](brendank@pennmedicine.upenn.edu)
+
+
+
+
